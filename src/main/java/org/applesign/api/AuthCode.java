@@ -18,9 +18,10 @@ import java.util.TreeMap;
 
 public class AuthCode {
 
-    private static final String API_APPLIST = "https://applesign.org/api/third/authcode";
+    private static final String API_AUTHCODE = "https://applesign.org/api/third/authcode";
+    private static final String API_LISTCODE = "https://applesign.org/api/third/authcodeList";
 
-    private String generate(String account, String passwd, String alias, String udid)
+    public String generate(String account, String passwd, String alias, String udid)
     {
         long timestamp = System.currentTimeMillis() / 1000;
 
@@ -39,16 +40,46 @@ public class AuthCode {
             // System.out.println(params);
             HashMap<String, String> headers = new HashMap<String, String>();
             headers.put("Content-Type","application/json;charset=utf-8");
-            HttpResponse httpResponse = HttpUtils.doPost(API_APPLIST, null, headers, params, new HashMap<>());
+            HttpResponse httpResponse = HttpUtils.doPost(API_AUTHCODE, null, headers, params, new HashMap<>());
             String respStr = EntityUtils.toString(httpResponse.getEntity(), "UTF-8");
             System.out.println(respStr);
             // return "";
             JSONObject obj = JSON.parseObject(respStr);
-            return obj.getString("code");
+            return obj.getJSONObject("data").getString("code");
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
         return "";
+    }
+
+
+    public JSONObject list(String account, String passwd, Long appId, String udid)
+    {
+        long timestamp = System.currentTimeMillis() / 1000;
+
+        SortedMap<String, String> params = new TreeMap<String, String>();
+        params.put("account",account);
+        params.put("timestamp", String.valueOf(timestamp));
+        params.put("appId", String.valueOf(appId));
+        params.put("udid", udid);
+        params.put("size", "1500");
+        params.put("current", "1");
+        String newSign = MD5Sign.getSign(params,passwd);
+        params.put("secret",newSign);
+
+        try {
+            // System.out.println(params);
+            HashMap<String, String> headers = new HashMap<String, String>();
+            headers.put("Content-Type","application/json;charset=utf-8");
+            HttpResponse httpResponse = HttpUtils.doPost(API_LISTCODE, null, headers, params, new HashMap<>());
+            String respStr = EntityUtils.toString(httpResponse.getEntity(), "UTF-8");
+            System.out.println(respStr);
+            JSONObject obj = JSON.parseObject(respStr);
+            return obj.getJSONObject("data");
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+        return null;
     }
 
     public static void main(String[] args) throws IOException {
@@ -67,6 +98,7 @@ public class AuthCode {
         HelpFormatter formatter = new HelpFormatter();
         CommandLine cmd;
         System.out.println(Arrays.toString(args));
+        boolean ACTION_LIST = (args.length <= 2);
         if (args.length > 2) {
             try {
                 cmd = parser.parse(options, args);
@@ -79,10 +111,19 @@ public class AuthCode {
             }
         }
         AuthCode ac = new AuthCode();
-        FileWriter writer = new FileWriter("AuthCode.txt", true);
-        for (int i=0; i<1500; i++) {
-            String code = ac.generate(account, passwd, Credentials.alias, "");
-            writer.write(code + "\r\n");
+        FileWriter writer = new FileWriter("AuthCode.txt", false);
+        if (ACTION_LIST) {
+            JSONObject data = ac.list(account, passwd, 155151184953346L, "");
+            JSONArray list = data.getJSONArray("list");
+            for (int i=0; i<list.size(); i++) {
+                writer.write(list.getJSONObject(i).getString("code") + "\r\n");
+            }
+        }
+        else {
+            for (int i=0; i<1500; i++) {
+                String code = ac.generate(account, passwd, Credentials.alias, "");
+                writer.write(code + "\r\n");
+            }
         }
         writer.close();
     }
