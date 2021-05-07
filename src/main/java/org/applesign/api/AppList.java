@@ -1,5 +1,6 @@
 package org.applesign.api;
 
+import org.applesign.Credentials;
 import org.applesign.utils.HttpUtils;
 import org.applesign.utils.MD5Sign;
 import org.apache.http.Header;
@@ -45,9 +46,9 @@ public class AppList {
         }
     }
 
-    public static void main(String[] args){
-        String account = "test"; // 用户名
-        String passwd = "980980"; // 用户登录密码 作为加密的盐值
+    public static void main(String[] args) {
+        String account = Credentials.account;
+        String passwd = Credentials.passwd;
         Options options = new Options();
         Option userO = new Option("u", "user", true, "Username");
         userO.setRequired(true);
