@@ -98,7 +98,7 @@ public class AuthCode {
         HelpFormatter formatter = new HelpFormatter();
         CommandLine cmd;
         System.out.println(Arrays.toString(args));
-        boolean ACTION_LIST = (args.length <= 2);
+        boolean ACTION_LIST = (args.length > 2);
         if (args.length > 2) {
             try {
                 cmd = parser.parse(options, args);
@@ -111,18 +111,20 @@ public class AuthCode {
             }
         }
         AuthCode ac = new AuthCode();
-        FileWriter writer = new FileWriter("AuthCode.txt", false);
+        FileWriter writer = new FileWriter("AuthCode-" + account + ".txt", false);
         if (ACTION_LIST) {
             JSONObject data = ac.list(account, passwd, 155151184953346L, "");
             JSONArray list = data.getJSONArray("list");
             for (int i=0; i<list.size(); i++) {
                 writer.write(list.getJSONObject(i).getString("code") + "\r\n");
+                writer.flush();
             }
         }
         else {
             for (int i=0; i<1500; i++) {
                 String code = ac.generate(account, passwd, Credentials.alias, "");
                 writer.write(code + "\r\n");
+                writer.flush();
             }
         }
         writer.close();
