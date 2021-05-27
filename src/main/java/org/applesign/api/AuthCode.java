@@ -1,8 +1,9 @@
 package org.applesign.api;
 
-import com.alibaba.fastjson.*;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import org.apache.commons.cli.*;
-import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.util.EntityUtils;
 import org.applesign.Credentials;
@@ -21,25 +22,24 @@ public class AuthCode {
     private static final String API_AUTHCODE = "https://applesign.org/api/third/authcode";
     private static final String API_LISTCODE = "https://applesign.org/api/third/authcodeList";
 
-    public String generate(String account, String passwd, String alias, String udid)
-    {
+    public String generate(String account, String passwd, String alias, String udid) {
         long timestamp = System.currentTimeMillis() / 1000;
 
         String appName = ""; // 模糊查询
 
         SortedMap<String, String> params = new TreeMap<String, String>();
-        params.put("account",account);
+        params.put("account", account);
         params.put("timestamp", String.valueOf(timestamp));
-        params.put("name",appName);
+        params.put("name", appName);
         params.put("alias", alias);
         params.put("udid", udid);
-        String newSign = MD5Sign.getSign(params,passwd);
-        params.put("secret",newSign);
+        String newSign = MD5Sign.getSign(params, passwd);
+        params.put("secret", newSign);
 
         try {
             // System.out.println(params);
             HashMap<String, String> headers = new HashMap<String, String>();
-            headers.put("Content-Type","application/json;charset=utf-8");
+            headers.put("Content-Type", "application/json;charset=utf-8");
             HttpResponse httpResponse = HttpUtils.doPost(API_AUTHCODE, null, headers, params, new HashMap<>());
             String respStr = EntityUtils.toString(httpResponse.getEntity(), "UTF-8");
             System.out.println(respStr);
@@ -53,24 +53,23 @@ public class AuthCode {
     }
 
 
-    public JSONObject list(String account, String passwd, Long appId, String udid)
-    {
+    public JSONObject list(String account, String passwd, Long appId, String udid) {
         long timestamp = System.currentTimeMillis() / 1000;
 
         SortedMap<String, String> params = new TreeMap<String, String>();
-        params.put("account",account);
+        params.put("account", account);
         params.put("timestamp", String.valueOf(timestamp));
         params.put("appId", String.valueOf(appId));
         params.put("udid", udid);
         params.put("size", "1500");
         params.put("current", "1");
-        String newSign = MD5Sign.getSign(params,passwd);
-        params.put("secret",newSign);
+        String newSign = MD5Sign.getSign(params, passwd);
+        params.put("secret", newSign);
 
         try {
             // System.out.println(params);
             HashMap<String, String> headers = new HashMap<String, String>();
-            headers.put("Content-Type","application/json;charset=utf-8");
+            headers.put("Content-Type", "application/json;charset=utf-8");
             HttpResponse httpResponse = HttpUtils.doPost(API_LISTCODE, null, headers, params, new HashMap<>());
             String respStr = EntityUtils.toString(httpResponse.getEntity(), "UTF-8");
             System.out.println(respStr);
@@ -113,15 +112,14 @@ public class AuthCode {
         AuthCode ac = new AuthCode();
         FileWriter writer = new FileWriter("AuthCode-" + account + ".txt", false);
         if (ACTION_LIST) {
-            JSONObject data = ac.list(account, passwd, 155151184953346L, "");
+            JSONObject data = ac.list(account, passwd, Credentials.appId, "");
             JSONArray list = data.getJSONArray("list");
-            for (int i=0; i<list.size(); i++) {
+            for (int i = 0; i < list.size(); i++) {
                 writer.write(list.getJSONObject(i).getString("code") + "\r\n");
                 writer.flush();
             }
-        }
-        else {
-            for (int i=0; i<1500; i++) {
+        } else {
+            for (int i = 0; i < 21; i++) {
                 String code = ac.generate(account, passwd, Credentials.alias, "");
                 writer.write(code + "\r\n");
                 writer.flush();
