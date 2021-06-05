@@ -24,9 +24,9 @@ public class AppUpload {
      * https://help.aliyun.com/document_detail/84781.htm
      *
      * @param ossCfg  {"key":"156611628892161/ios/1622038995344.ipa","policy":"eyJleHBpcmF0aW9uIjoiMjAyMS0wNS0yNlQxNToyMzoxNS4zNTFaIiwiY29uZGl0aW9ucyI6W1siY29udGVudC1sZW5ndGgtcmFuZ2UiLDAsMjE0NzQ4MzY0OF0sWyJzdGFydHMtd2l0aCIsIiRrZXkiLCIiXV19","signature":"PjQ4N+bO5/TyrkyLxhIw2cJdoGY=","host":"https://cjq-ipa-private.oss-accelerate.aliyuncs.com/","ossaccessKeyId":"LTAI4G2yMKDveTsS3L******"}
-     * @param ipaPath
+     * @param file
      */
-    private String uploadToOSS(JSONObject ossCfg, String ipaPath) throws Exception {
+    private String uploadToOSS(JSONObject ossCfg, File file) throws Exception {
         String endpoint = ossCfg.getString("host");
         String accessKeyId = ossCfg.getString("ossaccessKeyId");
         String key = ossCfg.getString("key");
@@ -45,14 +45,14 @@ public class AppUpload {
         // Signature
         formFields.put("Signature", ossCfg.getString("signature"));
 
-        String ret = formUpload(endpoint, formFields, ipaPath);
+        String ret = formUpload(endpoint, formFields, file);
 
         System.out.println("Post Object [" + key + "] to OSS");
         System.out.println("post reponse:" + ret);
         return ret;
     }
 
-    private static String formUpload(String urlStr, Map<String, String> formFields, String localFile)
+    private static String formUpload(String urlStr, Map<String, String> formFields, File file)
             throws Exception {
         String res = "";
         HttpURLConnection conn = null;
@@ -106,7 +106,6 @@ public class AppUpload {
             }
 
             // file
-            File file = new File(localFile);
             String filename = file.getName();
             String contentType = "application/octet-stream";
 
@@ -155,11 +154,38 @@ public class AppUpload {
         return res;
     }
 
-    public void upload(String account, String passwd, String ipaPath) {
-        upload(account, passwd, ipaPath, 0, "ipa");
+    public int upload(String account, String passwd, String ipaPath) {
+        File file = new File(ipaPath);
+        boolean exists =      file.exists();      // Check if the file exists
+        boolean isDirectory = file.isDirectory(); // Check if it's a directory
+        boolean isFile =      file.isFile();      // Check if it's a regular file
+        if (!exists) {
+            System.out.println("文件/文件夹不存在 " + ipaPath);
+            return -1;
+        }
+        if (isFile) {
+            if (ipaPath.toLowerCase().endsWith(".ipa")) {
+                upload(account, passwd, file, 0, "ipa");
+                return 1;
+            } else {
+                System.out.println("文件类型不匹配，忽略 " + ipaPath);
+                return -2;
+            }
+        }
+        if (isDirectory) {
+            File[] directoryListing = file.listFiles();
+            if (directoryListing != null) {
+                for (File child : directoryListing) {
+                    upload(account, passwd, child.getAbsolutePath());
+                }
+            }
+            return 2;
+        }
+        System.out.println("未知路径 " + ipaPath);
+        return -3;
     }
 
-    public void upload(String account, String passwd, String ipaPath, long appId, String type) {
+    public void upload(String account, String passwd, File ipaPath, long appId, String type) {
         long timestamp = System.currentTimeMillis() / 1000;
 
         SortedMap<String, String> params = new TreeMap<String, String>();
@@ -206,6 +232,7 @@ public class AppUpload {
     public static void main(String[] args) {
         String account = Credentials.account;
         String passwd = Credentials.passwd;
+        String ipaPath = Credentials.ipaPath;
         Options options = new Options();
         Option userO = new Option("u", "user", true, "Username");
         userO.setRequired(true);
@@ -214,6 +241,10 @@ public class AppUpload {
         Option passwdO = new Option("p", "passwd", true, "Password");
         passwdO.setRequired(true);
         options.addOption(passwdO);
+
+        Option ipaO = new Option("i", "ipa", true, "ipa");
+        ipaO.setRequired(true);
+        options.addOption(ipaO);
 
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
@@ -224,6 +255,7 @@ public class AppUpload {
                 cmd = parser.parse(options, args);
                 account = cmd.getOptionValue("user");
                 passwd = cmd.getOptionValue("passwd");
+                ipaPath = cmd.getOptionValue("ipa");
             } catch (ParseException e) {
                 System.out.println(e.getMessage());
                 formatter.printHelp("utility-name", options);
@@ -231,6 +263,6 @@ public class AppUpload {
             }
         }
         AppUpload tl = new AppUpload();
-        tl.upload(account, passwd, Credentials.ipaPath);
+        tl.upload(account, passwd, ipaPath);
     }
 }
