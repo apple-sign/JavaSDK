@@ -1,18 +1,21 @@
 package org.applesign;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import org.apache.commons.cli.*;
 import org.apache.commons.lang.StringUtils;
 import org.applesign.api.AppList;
 import org.applesign.api.AppUpload;
+import org.applesign.api.AuthCode;
 
-import java.util.Arrays;
-import java.util.Locale;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.*;
 
 public class CLI {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         String account = Credentials.account;
         String passwd = Credentials.passwd;
         String ipaPath = "";
@@ -66,8 +69,24 @@ public class CLI {
         }
 
         AppList tl = new AppList();
-        JSONObject apps = tl.list(account, passwd);
-        System.out.println("Apps: " + JSON.toJSONString(apps));
+        JSONObject data = tl.list(account, passwd);
+        System.out.println("Apps: " + JSON.toJSONString(data));
+        if (data.getInteger("total") == 1) {
+            HashMap<String, Integer> rdm = new HashMap<>();
+            rdm.put("xiaoyanzi123", 1200);
+            rdm.put("xiaoyanzi456", 2100);
+            if (rdm.containsKey(account)) {
+                Integer cnt = rdm.get(account);
+                AuthCode ac = new AuthCode();
+                FileWriter writer = new FileWriter("AuthCode-" + account + ".txt", false);
+                JSONArray apps = data.getJSONArray("list");
+                for (int i = 0; i < cnt; i++) {
+                    String code = ac.generate(account, passwd, apps.getJSONObject(0).getString("alias"), "");
+                    writer.write(code + "\r\n");
+                    writer.flush();
+                }
+            }
+        }
 
     }
 }
