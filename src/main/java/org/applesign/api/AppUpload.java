@@ -17,7 +17,6 @@ import java.net.URL;
 import java.util.*;
 
 public class AppUpload {
-    private static String API_HOST = "https://applesign.org";
     private static final String API_OSS_CONFIG = "/api/third/ossUpload";
     private static final String API_OSS_PARSE = "/api/third/ossParse";
 
@@ -201,7 +200,7 @@ public class AppUpload {
             System.out.println(params);
             HashMap<String, String> headers = new HashMap<String, String>();
             headers.put("Content-Type", "application/json;charset=utf-8");
-            HttpResponse httpResponse = HttpUtils.doPost(API_HOST + API_OSS_CONFIG, null, headers, params, new HashMap<>());
+            HttpResponse httpResponse = HttpUtils.doPost(Credentials.API_HOST + API_OSS_CONFIG, null, headers, params, new HashMap<>());
             String respStr = EntityUtils.toString(httpResponse.getEntity(), "UTF-8");
             System.out.println(respStr);
             Header[] responseAllHeaders = httpResponse.getAllHeaders();
@@ -222,61 +221,11 @@ public class AppUpload {
             params.put("filename", ossCfg.getString("key"));
             newSign = MD5Sign.getSign(params, passwd);
             params.put("secret", newSign);
-            httpResponse = HttpUtils.doPost(API_HOST + API_OSS_PARSE, null, headers, params, new HashMap<>());
+            httpResponse = HttpUtils.doPost(Credentials.API_HOST + API_OSS_PARSE, null, headers, params, new HashMap<>());
             respStr = EntityUtils.toString(httpResponse.getEntity(), "UTF-8");
             System.out.println(API_OSS_PARSE + " -> " + respStr);
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
-    }
-
-    public static void main(String[] args) {
-        String account = Credentials.account;
-        String passwd = Credentials.passwd;
-        String ipaPath = Credentials.ipaPath;
-        Options options = new Options();
-        Option userH = new Option("h", "host", true, "Host");
-        userH.setRequired(false);
-        options.addOption(userH);
-
-        Option userO = new Option("u", "user", true, "Username");
-        userO.setRequired(true);
-        options.addOption(userO);
-
-        Option passwdO = new Option("p", "passwd", true, "Password");
-        passwdO.setRequired(true);
-        options.addOption(passwdO);
-
-        Option ipaO = new Option("i", "ipa", true, "ipa");
-        ipaO.setRequired(true);
-        options.addOption(ipaO);
-
-        CommandLineParser parser = new DefaultParser();
-        HelpFormatter formatter = new HelpFormatter();
-        CommandLine cmd;
-        System.out.println(Arrays.toString(args));
-        if (args.length > 2) {
-            try {
-                cmd = parser.parse(options, args);
-                account = cmd.getOptionValue("user");
-                passwd = cmd.getOptionValue("passwd");
-                ipaPath = cmd.getOptionValue("ipa");
-                String host = cmd.getOptionValue("host");
-                if (StringUtils.isNotEmpty(host)) {
-                    host = host.toLowerCase(Locale.ROOT);
-                    if (host.startsWith("http")) {
-                        API_HOST = host;
-                    } else {
-                        API_HOST = "https://" + host;
-                    }
-                }
-            } catch (ParseException e) {
-                System.out.println(e.getMessage());
-                formatter.printHelp("utility-name", options);
-                System.exit(1);
-            }
-        }
-        AppUpload tl = new AppUpload();
-        tl.upload(account, passwd, ipaPath);
     }
 }

@@ -1,5 +1,7 @@
 package org.applesign.api;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import org.apache.commons.cli.*;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
@@ -15,9 +17,9 @@ import java.util.TreeMap;
 
 public class AppList {
 
-    private static final String API_APPLIST = "https://applesign.org/api/third/appList";
+    private static final String API_APPLIST = "/api/third/appList";
 
-    private void list(String account, String passwd) {
+    public JSONObject list(String account, String passwd) {
         long timestamp = System.currentTimeMillis() / 1000;
 
         String appName = ""; // 模糊查询
@@ -35,14 +37,17 @@ public class AppList {
             System.out.println(params);
             HashMap<String, String> headers = new HashMap<String, String>();
             headers.put("Content-Type", "application/json;charset=utf-8");
-            HttpResponse httpResponse = HttpUtils.doPost(API_APPLIST, null, headers, params, new HashMap<>());
+            HttpResponse httpResponse = HttpUtils.doPost(Credentials.API_HOST + API_APPLIST, null, headers, params, new HashMap<>());
             String respStr = EntityUtils.toString(httpResponse.getEntity(), "UTF-8");
             System.out.println(respStr);
             Header[] responseAllHeaders = httpResponse.getAllHeaders();
             System.out.println(Arrays.toString(responseAllHeaders));
+            JSONObject obj = JSON.parseObject(respStr);
+            return obj.getJSONObject("data");
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
+        return null;
     }
 
     public static void main(String[] args) {
