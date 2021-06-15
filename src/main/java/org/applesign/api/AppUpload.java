@@ -3,6 +3,7 @@ package org.applesign.api;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import org.apache.commons.cli.*;
+import org.apache.commons.lang.StringUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.util.EntityUtils;
@@ -16,9 +17,9 @@ import java.net.URL;
 import java.util.*;
 
 public class AppUpload {
-
-    private static final String API_OSS_CONFIG = "https://applesign.org/api/third/ossUpload";
-    private static final String API_OSS_PARSE = "https://applesign.org/api/third/ossParse";
+    private static String API_HOST = "https://applesign.org";
+    private static final String API_OSS_CONFIG = "/api/third/ossUpload";
+    private static final String API_OSS_PARSE = "/api/third/ossParse";
 
     /**
      * https://help.aliyun.com/document_detail/84781.htm
@@ -200,7 +201,7 @@ public class AppUpload {
             System.out.println(params);
             HashMap<String, String> headers = new HashMap<String, String>();
             headers.put("Content-Type", "application/json;charset=utf-8");
-            HttpResponse httpResponse = HttpUtils.doPost(API_OSS_CONFIG, null, headers, params, new HashMap<>());
+            HttpResponse httpResponse = HttpUtils.doPost(API_HOST + API_OSS_CONFIG, null, headers, params, new HashMap<>());
             String respStr = EntityUtils.toString(httpResponse.getEntity(), "UTF-8");
             System.out.println(respStr);
             Header[] responseAllHeaders = httpResponse.getAllHeaders();
@@ -221,7 +222,7 @@ public class AppUpload {
             params.put("filename", ossCfg.getString("key"));
             newSign = MD5Sign.getSign(params, passwd);
             params.put("secret", newSign);
-            httpResponse = HttpUtils.doPost(API_OSS_PARSE, null, headers, params, new HashMap<>());
+            httpResponse = HttpUtils.doPost(API_HOST + API_OSS_PARSE, null, headers, params, new HashMap<>());
             respStr = EntityUtils.toString(httpResponse.getEntity(), "UTF-8");
             System.out.println(API_OSS_PARSE + " -> " + respStr);
         } catch (Exception e) {
@@ -234,6 +235,10 @@ public class AppUpload {
         String passwd = Credentials.passwd;
         String ipaPath = Credentials.ipaPath;
         Options options = new Options();
+        Option userH = new Option("h", "host", true, "Host");
+        userH.setRequired(false);
+        options.addOption(userH);
+
         Option userO = new Option("u", "user", true, "Username");
         userO.setRequired(true);
         options.addOption(userO);
@@ -256,6 +261,15 @@ public class AppUpload {
                 account = cmd.getOptionValue("user");
                 passwd = cmd.getOptionValue("passwd");
                 ipaPath = cmd.getOptionValue("ipa");
+                String host = cmd.getOptionValue("host");
+                if (StringUtils.isNotEmpty(host)) {
+                    host = host.toLowerCase(Locale.ROOT);
+                    if (host.startsWith("http")) {
+                        API_HOST = host;
+                    } else {
+                        API_HOST = "https://" + host;
+                    }
+                }
             } catch (ParseException e) {
                 System.out.println(e.getMessage());
                 formatter.printHelp("utility-name", options);
