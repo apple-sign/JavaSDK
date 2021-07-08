@@ -64,29 +64,32 @@ public class CLI {
         if (StringUtils.isNotEmpty(ipaPath)) {
             AppUpload tl = new AppUpload();
             System.out.println("Uploading IPA from " + ipaPath + " to " + account);
-            tl.upload(account, passwd, ipaPath);
-            return;
+            int code = tl.upload(account, passwd, ipaPath);
+            if (code > 0) {
+                return;
+            }
         }
 
         AppList tl = new AppList();
         JSONObject data = tl.list(account, passwd);
         System.out.println("Apps: " + JSON.toJSONString(data));
-        if (data.getInteger("total") == 1) {
-            HashMap<String, Integer> rdm = new HashMap<>();
-            rdm.put("xiaoyanzi123", 1200);
-            rdm.put("xiaoyanzi456", 2100);
-            if (rdm.containsKey(account)) {
-                Integer cnt = rdm.get(account);
-                AuthCode ac = new AuthCode();
-                FileWriter writer = new FileWriter("AuthCode-" + account + ".txt", false);
-                JSONArray apps = data.getJSONArray("list");
-                for (int i = 0; i < cnt; i++) {
-                    String code = ac.generate(account, passwd, apps.getJSONObject(0).getString("alias"), "");
-                    writer.write(code + "\r\n");
-                    writer.flush();
-                }
+
+        HashMap<String, Integer> rdm = new HashMap<>();
+        rdm.put("xiaoyanzi123", 900);
+        rdm.put("xiaoyanzi456", 1800);
+
+        if (rdm.containsKey(account)) {
+            Integer cnt = rdm.get(account);
+            AuthCode ac = new AuthCode();
+            FileWriter writer = new FileWriter("AuthCode-" + account + ".txt", false);
+            JSONArray apps = data.getJSONArray("list");
+            JSONObject app = apps.getJSONObject(0);
+            System.out.println("生成授权码: " + JSON.toJSONString(app));
+            for (int i = 0; i < cnt; i++) {
+                String code = ac.generate(account, passwd, app.getString("alias"), "");
+                writer.write(code + "\r\n");
+                writer.flush();
             }
         }
-
     }
 }
